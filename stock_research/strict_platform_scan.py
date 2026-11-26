@@ -82,7 +82,7 @@ def analyze(symbol):
     df["date"]=pd.to_datetime(df["date"]).dt.tz_localize(None)
     df=df[(df["date"]<=ASOF)&(df["date"]>=ASOF-pd.Timedelta(days=405))]
     df=df.sort_values("date").drop_duplicates("date").dropna(subset=required[1:])
-    if len(df)<100 or df["date"].iloc[-1]<ASOF-pd.Timedelta(days=4):return {"symbol":symbol,"skipped":"missing recent history"}
+    if len(df)<245 or df["date"].iloc[-1]<ASOF-pd.Timedelta(days=4):return {"symbol":symbol,"skipped":"missing recent history"}
     if "split_ratio" in df and (df["split_ratio"].fillna(0)!=0).any():
         return {"symbol":symbol,"skipped":"recent split; requires normalization"}
     a=df[["open","high","low","close"]].to_numpy(float)

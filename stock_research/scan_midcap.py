@@ -29,7 +29,7 @@ def screen(symbol, raw):
     if any(x not in df.columns for x in need):return []
     df=df.dropna(subset=need).sort_index()
     dates=pd.to_datetime(df.index).strftime("%Y-%m-%d").tolist()
-    if len(df)<100 or dates[-1]<"2026-11-20":return []
+    if len(df)<245 or dates[-1]<"2026-11-20":return []
     a=df[need].to_numpy(float);N=len(a)
     hits=[]
     for days in [60,75,90,105,120,150,180,210,240]:

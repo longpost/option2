@@ -29,7 +29,7 @@ def screen(symbol, raw):
     if any(x not in df.columns for x in need):return []
     df=df.dropna(subset=need).sort_index()
     dates=pd.to_datetime(df.index).strftime("%Y-%m-%d").tolist()
-    if len(df)<245 or dates[-1]<"2026-11-20":return []
+    if len(df)<100 or dates[-1]<"2026-11-20":return []
     a=df[need].to_numpy(float);N=len(a)
     hits=[]
     for days in [60,75,90,105,120,150,180,210,240]:
@@ -39,16 +39,16 @@ def screen(symbol, raw):
             U=p["upper"]
             bk=-1
             for j in range(end,min(end+15,N-1)):
-                if a[j,3]>U*1.025 and a[j+1,3]>U*1.025:
+                if a[j,3]>U*1.015 and a[j+1,3]>U*1.015:
                     bk=j;break
             if bk<0:continue
             peak_i=bk+int(np.argmax(a[bk:,1]))
-            if a[peak_i,1]/U<1.07 or peak_i>=N-2 or N-peak_i>60:continue
+            if a[peak_i,1]/U<1.04 or peak_i>=N-2 or N-peak_i>60:continue
             distance=a[-1,3]/U-1
-            if not -.005<=distance<=.03:continue
+            if not -.01<=distance<=.05:continue
             post=a[peak_i+1:];touch=np.where((post[:,2]<=U*1.025)&(post[:,1]>=U*.99))[0]
-            if len(touch)==0 or peak_i+1+int(touch[0])<N-5:continue
-            if np.min(post[:,2])<U*.99 or np.min(post[:,3])<U*.995:continue
+            if len(touch)==0 or peak_i+1+int(touch[0])<N-10:continue
+            if np.min(post[:,2])<U*.99 or np.min(post[:,3])<U*.99:continue
             hits.append(dict(ticker=symbol,base_start=dates[end-days],base_end=dates[end-1],
                 upper=round(U,2),lower=round(p["lower"],2),base_days=days,
                 high_tests=p["highs"],low_tests=p["lows"],breakout=dates[bk],

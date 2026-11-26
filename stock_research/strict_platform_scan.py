@@ -30,10 +30,10 @@ def slope(p):
 def base(w):
     n=len(w); tops=pivots(w,1,True); bottoms=pivots(w,2,False)
     c=w[:,3]; best=None
-    if len(tops)<3 or len(bottoms)<3:return None
+    if len(tops)<2 or len(bottoms)<3:return None
     for _,level in tops:
-        H=separate([p for p in tops if abs(p[1]/level-1)<=.018])
-        if len(H)<3 or H[0][0]>.40*n or H[-1][0]<.66*n:continue
+        H=separate([p for p in tops if abs(p[1]/level-1)<=.03])
+        if len(H)<2 or H[0][0]>.40*n or H[-1][0]<.66*n:continue
         U=median([p[1] for p in H])
         if abs(slope(H)*n/U)>.04:continue
         # Do not include an earlier breakout inside the putative platform.
@@ -82,7 +82,7 @@ def analyze(symbol):
     df["date"]=pd.to_datetime(df["date"]).dt.tz_localize(None)
     df=df[(df["date"]<=ASOF)&(df["date"]>=ASOF-pd.Timedelta(days=405))]
     df=df.sort_values("date").drop_duplicates("date").dropna(subset=required[1:])
-    if len(df)<245 or df["date"].iloc[-1]<ASOF-pd.Timedelta(days=4):return {"symbol":symbol,"skipped":"missing recent history"}
+    if len(df)<100 or df["date"].iloc[-1]<ASOF-pd.Timedelta(days=4):return {"symbol":symbol,"skipped":"missing recent history"}
     if "split_ratio" in df and (df["split_ratio"].fillna(0)!=0).any():
         return {"symbol":symbol,"skipped":"recent split; requires normalization"}
     a=df[["open","high","low","close"]].to_numpy(float)
@@ -94,20 +94,20 @@ def analyze(symbol):
             if b is None:continue
             U=b["upper"];breakout=-1
             for j in range(end,min(end+15,n-1)):
-                if a[j,3]>U*1.025 and a[j+1,3]>U*1.025:
+                if a[j,3]>U*1.015 and a[j+1,3]>U*1.015:
                     breakout=j;break
             if breakout<0:continue
             peak_i=breakout+int(np.argmax(a[breakout:,1]));peak=a[peak_i,1]
-            if peak/U<1.07 or peak_i>=n-2 or n-peak_i>60:continue
+            if peak/U<1.04 or peak_i>=n-2 or n-peak_i>60:continue
             close=a[-1,3];relative=close/U-1
-            if not -.005<=relative<=.03:continue
+            if not -.01<=relative<=.05:continue
             post=a[peak_i+1:]
             # No significant failed test followed by a reclaim.
-            if np.min(post[:,2])<U*.99 or np.min(post[:,3])<U*.995:continue
+            if np.min(post[:,2])<U*.99 or np.min(post[:,3])<U*.99:continue
             touches=np.where((post[:,2]<=U*1.025)&(post[:,1]>=U*.99))[0]
             if len(touches)==0:continue
             first_touch=peak_i+1+int(touches[0])
-            if first_touch<n-5:continue
+            if first_touch<n-10:continue
             matches.append({
                 "ticker":symbol,"asof":dates[-1],"base_start":dates[end-days],
                 "base_end":dates[end-1],"base_days":days,

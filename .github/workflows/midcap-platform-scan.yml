@@ -1,0 +1,33 @@
+name: Midcap S&P400 first-retest research scan
+on:
+  push:
+    branches:
+      - research/strict-platform-screen-20261126
+    paths:
+      - 'stock_research/scan_midcap.py'
+      - '.github/workflows/midcap-platform-scan.yml'
+  workflow_dispatch:
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install public data clients
+        run: pip install numpy pandas pyarrow requests yfinance lxml html5lib
+      - name: Scan midcaps
+        run: python stock_research/scan_midcap.py
+      - name: Save outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: midcap-strict-retest-results
+          path: midcap_strict_results.json
+          if-no-files-found: warn
+          retention-days: 7

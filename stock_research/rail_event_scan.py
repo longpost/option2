@@ -19,7 +19,7 @@ def screen(t,df):
         vr=v[i]/max(1,np.mean(v[i-20:i]))
         br=body[i]/max(.0001,np.mean(body[i-20:i]))
         rr=(h[i]-l[i])/max(.0001,np.mean(h[i-20:i]-l[i-20:i]))
-        if max(vr,br,rr)>=2.0:events.append((i,vr,br,rr))
+        if max(vr,br)>=2.0:events.append((i,vr,br,rr))
     if not events:return None,"no_event"
     hits=[];intact=False
     # The large candle itself defines the short-term price interval.
@@ -43,7 +43,7 @@ def screen(t,df):
                 if distance[i]<=.25:continue
             elif distance[first-1]<=.25:continue
             if distance[-1]-min(distance[first:])>.08:continue
-            hits.append(dict(ticker=t,side=side,rail=round(rail,2),close=round(c[-1],2),distance_pct=round(abs(c[-1]/rail-1)*100,2),range_distance_pct=round(distance[-1]*100,2),event=str(df.index[i])[:10],volume_ratio=round(vr,2),body_ratio=round(br,2),range_ratio=round(rr,2),first_approach=str(df.index[first])[:10],upper=round(u,2),lower=round(d,2),days_after_event=n-1-i,score=max(vr,br,rr)))
+            hits.append(dict(ticker=t,side=side,rail=round(rail,2),close=round(c[-1],2),distance_pct=round(abs(c[-1]/rail-1)*100,2),range_distance_pct=round(distance[-1]*100,2),event=str(df.index[i])[:10],volume_ratio=round(vr,2),body_ratio=round(br,2),range_ratio=round(rr,2),first_approach=str(df.index[first])[:10],upper=round(u,2),lower=round(d,2),days_after_event=n-1-i,score=max(vr,br)))
     return (min(hits,key=lambda x:(x["range_distance_pct"],-x["score"])),"match") if hits else (None,"not_first_approach" if intact else "event_range_broken")
 
 def main():

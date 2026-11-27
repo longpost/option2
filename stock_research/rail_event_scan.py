@@ -46,34 +46,34 @@ def screen(t,df):
         if max(ratios)>=1.5:events[i]=ratios
     if not events:return None,"no_event"
     hits=[];found=False;valid=False;nearby=False
-    for end in range(n-10,n):
+    for end in [n-10]:
         for days in [60,75,90,105,120,150,180,210,240]:
             if end<days:continue
             for u,d,score in rails(a[end-days:end]):
                 found=True
                 # Validate the entire continuation, not only the event day.
-                if max(h[end:])>u*1.025 or min(l[end:])<d*.975:continue
-                if max(c[end:])>u*1.01 or min(c[end:])<d*.99:continue
+                if max(h[n-10:])>u or min(l[n-10:])<d:continue
+                if max(c[n-10:])>u or min(c[n-10:])<d:continue
                 valid=True
                 for side,rail in [("upper",u),("lower",d)]:
                     signed=(rail-c)/rail if side=="upper" else (c-rail)/rail
                     band=min(.04,(u-d)/rail*.25)
                     if not 0<=signed[-1]<=band:continue
                     nearby=True
-                    # Start from an interior excursion, not a conveniently chosen event.
+                    # Entire last ten sessions inside the channel; no actual rail touch.
                     edge=(rail-h)/rail if side=="upper" else (l-rail)/rail
-                    for i,ratios in events.items():
-                        if i<end:continue
-                        if signed[i-1]<=band:continue
-                        if signed[i]>signed[i-1]:continue
-                        if np.any(edge[end:i]<band):continue
-                        touch=np.flatnonzero(edge[i:]<=band)
-                        if not len(touch):continue
-                        first=i+int(touch[0])
-                        if first<n-3:continue
-                        if np.any(signed[first:]>band):continue
-                        if signed[-1]-min(signed[first:])>min(.008,band*.35):continue
-                        hits.append(dict(ticker=t,side=side,rail=round(rail,2),close=round(c[-1],2),distance_pct=round(signed[-1]*100,2),event=str(df.index[i])[:10],volume_ratio=round(ratios[0],2),body_ratio=round(ratios[1],2),range_ratio=round(ratios[2],2),first_touch=str(df.index[first])[:10],base_days=days,base_start=str(df.index[end-days])[:10],base_end=str(df.index[end-1])[:10],upper=round(u,2),lower=round(d,2),score=score))
+                    if np.min(edge[-10:])<=0:continue
+                    if signed[-1]<=0:continue
+                    # First approach to proximity band, not a completed touch or rebound.
+                    near=signed[-10:]<=band
+                    first=n-10+int(np.flatnonzero(near)[0])
+                    if first<n-3 or first==n-10:continue
+                    if not np.all(near[first-(n-10):]):continue
+                    if signed[-1]>signed[first-1]:continue
+                    if signed[-1]-np.min(signed[first:])>min(.005,band*.25):continue
+                    # Event is independent of approach direction and timing.
+                    i,ratios=max(events.items(),key=lambda item:max(item[1]))
+                    hits.append(dict(ticker=t,side=side,rail=round(rail,2),close=round(c[-1],2),distance_pct=round(signed[-1]*100,2),event=str(df.index[i])[:10],volume_ratio=round(ratios[0],2),body_ratio=round(ratios[1],2),range_ratio=round(ratios[2],2),first_approach=str(df.index[first])[:10],base_days=days,base_start=str(df.index[end-days])[:10],base_end=str(df.index[end-1])[:10],upper=round(u,2),lower=round(d,2),score=score))
     return (max(hits,key=lambda x:x["score"]),"match") if hits else (None,"first_approach_rejected" if nearby else "not_near" if valid else "invalid_continuation" if found else "no_platform")
 
 def main():

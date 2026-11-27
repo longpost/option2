@@ -1,0 +1,25 @@
+name: Volume or long candle first rail approach
+on:
+  push:
+    branches:
+      - research/strict-platform-screen-20261126
+    paths:
+      - 'stock_research/rail_event_scan.py'
+      - '.github/workflows/rail-event-scan.yml'
+  workflow_dispatch:
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy pandas pyarrow requests yfinance lxml html5lib
+      - run: python stock_research/rail_event_scan.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rail-event-results
+          path: rail_event_results.json

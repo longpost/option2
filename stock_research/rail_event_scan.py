@@ -15,10 +15,10 @@ def screen(t,df):
     if len(df)<245 or str(df.index[-1])[:10]!=ASOF:return None,False
     a=df.to_numpy(float);n=len(a);c=a[:,3];body=abs(c-a[:,0]);v=a[:,4]
     events=[]
-    for i in range(n-10,n-1):
+    for i in range(n-10,n):
         vr=v[i]/max(1,np.mean(v[i-20:i]))
         br=body[i]/max(.0001,np.mean(body[i-20:i]))
-        if vr>=1.8 or br>=2:events.append((i,vr,br))
+        if vr>=1.5 or br>=1.5:events.append((i,vr,br))
     if not events:return None,True
     hits=[]
     for days in [60,75,90,105,120,150,180,210,240]:
@@ -27,17 +27,21 @@ def screen(t,df):
             if not p:continue
             for side,rail in [("upper",p["upper"]),("lower",p["lower"])]:
                 dist=abs(c[-1]/rail-1)
-                if dist>.03:continue
-                near=(abs(c/rail-1)<=.03)|((a[:,2]<=rail*1.01)&(a[:,1]>=rail*.99))
+                if dist>.04:continue
+                near=(abs(c/rail-1)<=.04)|((a[:,2]<=rail*1.01)&(a[:,1]>=rail*.99))
                 for i,vr,br in events:
-                    if i<end or near[i]:continue
-                    touch=np.flatnonzero(near[i+1:])
+                    if i<end:continue
+                    if near[i] and near[i-1]:continue
+                    touch=np.flatnonzero(near[i:])
                     if not len(touch):continue
-                    first=i+1+int(touch[0])
-                    if not near[-1] or not np.all(near[first:]):continue
-                    if first<n-4:continue
-                    if side=="upper" and c[i]>rail*1.03:continue
-                    if side=="lower" and c[i]<rail*.97:continue
+                    first=i+int(touch[0])
+                    if not near[-1]:continue
+                    # Permit brief noise but reject a distinct departure and second approach.
+                    away=~near[first:]
+                    if np.any(away[:-1]&away[1:]):continue
+                    if first<n-10:continue
+                    if side=="upper" and c[i]>rail*1.04:continue
+                    if side=="lower" and c[i]<rail*.96:continue
                     hits.append(dict(ticker=t,side=side,rail=round(rail,2),close=round(c[-1],2),distance_pct=round(dist*100,2),event=str(df.index[i])[:10],volume_ratio=round(vr,2),body_ratio=round(br,2),first_touch=str(df.index[first])[:10],base_days=days,base_start=str(df.index[end-days])[:10],base_end=str(df.index[end-1])[:10],upper=round(p["upper"],2),lower=round(p["lower"],2),score=p["score"]))
     return max(hits,key=lambda h:h["score"]) if hits else None,True
 def main():

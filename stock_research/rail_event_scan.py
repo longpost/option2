@@ -19,7 +19,7 @@ def screen(t,df):
         vr=v[i]/max(1,np.mean(v[i-20:i]))
         br=body[i]/max(.0001,np.mean(body[i-20:i]))
         rr=(h[i]-l[i])/max(.0001,np.mean(h[i-20:i]-l[i-20:i]))
-        if max(vr,br,rr)>=1.5:events.append((i,vr,br,rr))
+        if max(vr,br,rr)>=2.0:events.append((i,vr,br,rr))
     if not events:return None,"no_event"
     hits=[];intact=False
     # The large candle itself defines the short-term price interval.

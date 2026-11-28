@@ -1,0 +1,32 @@
+name: Quality gated stock rescan
+on:
+  push:
+    branches:
+      - research/strict-platform-screen-20261126
+    paths:
+      - 'stock_research/qa_scan.py'
+      - '.github/workflows/qa-stock-scan.yml'
+  workflow_dispatch:
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install numpy pandas pyarrow requests
+      - uses: actions/download-artifact@v4
+        with:
+          name: rail-event-results
+          run-id: 46116582375
+          github-token: ${{ github.token }}
+      - run: python stock_research/qa_scan.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quality-stock-results
+          path: qa_results.json

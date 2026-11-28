@@ -22,4 +22,7 @@ jobs:
         if: always()
         with:
           name: rail-event-results
-          path: rail_event_results.json
+          path: |
+            rail_event_results.json
+            combined_platform_results.json
+            ohlcv_cache/

@@ -3,8 +3,9 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from strict_platform_scan import BASE
-from scan_midcap import universe
-ASOF="2026-11-25"
+from scan_midcap import universe, screen as platform_screen
+from pathlib import Path
+ASOF="2026-11-27"
 
 def screen(t,df):
     df=df.copy()
@@ -49,13 +50,23 @@ def screen(t,df):
 def main():
     names=sorted({str(t).replace(".","-") for t in set(pd.read_csv(BASE+"/manifest.csv")["ticker"].astype(str))|set(universe())})
     hits=[];failed=[];counts=collections.Counter();audit={}
+    platforms=[];platform_errors=[];platform_scanned=0
+    cache=Path("ohlcv_cache");cache.mkdir(exist_ok=True)
     for k in range(0,len(names),30):
         batch=names[k:k+30]
         try:
-            data=yf.download(batch,start="2025-09-01",end="2026-11-26",auto_adjust=True,group_by="ticker",threads=True,progress=False,timeout=25)
+            data=yf.download(batch,start="2025-09-01",end="2026-11-28",auto_adjust=True,group_by="ticker",threads=True,progress=False,timeout=25)
             for t in batch:
                 try:
-                    hit,status=screen(t,data[t])
+                    raw=data[t].dropna(subset=["Open","High","Low","Close","Volume"]).sort_index()
+                    if len(raw)>=245 and str(raw.index[-1])[:10]==ASOF:
+                        raw.to_parquet(cache/(t+".parquet"))
+                        try:
+                            ph=platform_screen(t,raw)
+                            platform_scanned+=1
+                            platforms.extend(ph)
+                        except Exception as pe:platform_errors.append({"ticker":t,"error":str(pe)})
+                    hit,status=screen(t,raw)
                     counts[status]+=1;audit[t]=status
                     if hit:hits.append(hit)
                     if status=="data":failed.append(t)
@@ -65,4 +76,7 @@ def main():
     out=dict(asof=ASOF,universe=len(names),scanned=len(names)-len(failed),failed=failed,counts=dict(counts),matches=hits,regression={t:audit.get(t) for t in ["CLF","REXR","APH","CI","ELV"]})
     open("rail_event_results.json","w").write(json.dumps(dict(out,audit=audit),indent=2))
     print("RAIL_RESULT",json.dumps(out),flush=True)
+    pout=dict(asof=ASOF,universe=len(names),scanned=platform_scanned,matches=platforms,errors=platform_errors)
+    open("combined_platform_results.json","w").write(json.dumps(pout,indent=2))
+    print("PLATFORM_RESULT",json.dumps(pout),flush=True)
 if __name__=="__main__":main()
